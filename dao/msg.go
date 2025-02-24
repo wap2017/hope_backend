@@ -11,9 +11,9 @@ func CreateMessage(msg *models.Message) error {
 }
 
 // GetMessages retrieves messages using `id` as the offset for pagination
-func GetMessages(chatID string, userID, lastID uint, pageSize int) ([]models.Message, error) {
+func GetMessages(chatID string, lastID uint, pageSize int) ([]models.Message, error) {
 	var messages []models.Message
-	query := config.DB.Where("chat_id = ? AND sender_id = ?", chatID, userID)
+	query := config.DB.Where("chat_id = ?", chatID)
 
 	// If lastID is provided, fetch messages with IDs greater than lastID
 	if lastID > 0 {

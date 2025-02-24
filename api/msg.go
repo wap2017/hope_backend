@@ -102,11 +102,11 @@ func getChatGPTResponse(userInput string) (string, error) {
 // GetMessagesHandler fetches all messages for a chat
 func GetMessagesHandler(c *gin.Context) {
 	chatID := c.Query("chat_id")
-	userID, err := strconv.Atoi(c.Query("user_id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	// userID, err := strconv.Atoi(c.Query("user_id"))
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+	// 	return
+	// }
 
 	lastID, err := strconv.Atoi(c.Query("last_id"))
 	if err != nil {
@@ -114,7 +114,7 @@ func GetMessagesHandler(c *gin.Context) {
 		return
 	}
 
-	messages, err := dao.GetMessages(chatID, uint(userID), uint(lastID), 50)
+	messages, err := dao.GetMessages(chatID, uint(lastID), 50)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch messages"})
 		return
