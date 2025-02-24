@@ -7,5 +7,5 @@ CREATE TABLE notes (
     updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_time TIMESTAMP NULL DEFAULT NULL,
     INDEX idx_user_date (user_id, note_date),
-    INDEX idx_soft_delete (deleted_at)
+    INDEX idx_soft_delete (deleted_time)
 );

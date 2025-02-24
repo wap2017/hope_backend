@@ -13,17 +13,20 @@ func main() {
 	// Create a new Gin router
 	r := gin.Default()
 
-	// Simple ping endpoint to check server status
-	r.GET("/ping", api.PingHandler)
-	r.POST("/user", api.UserHandler)
+	// Create a group for all /hope routes
+	hopeGroup := r.Group("/hope")
+	{
+		hopeGroup.GET("/ping", api.PingHandler)
+		hopeGroup.POST("/user", api.UserHandler)
 
-	// 聊天页接口
-	r.POST("/send", api.SendMessageHandler)
-	r.GET("/messages", api.GetMessagesHandler)
+		// Chat endpoints
+		hopeGroup.POST("/send", api.SendMessageHandler)
+		hopeGroup.GET("/messages", api.GetMessagesHandler)
 
-	// 日记页接口  TODO
-
-	// 设置页接口 TODO
+		// Future endpoints can be added here within the group
+		// Diary endpoints will go here
+		// Settings endpoints will go here
+	}
 
 	// Start the server on port 8080
 	r.Run(":8080")
