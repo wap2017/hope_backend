@@ -17,9 +17,9 @@ func GetMessages(chatID string, lastID uint, pageSize int) ([]models.Message, er
 
 	// If lastID is provided, fetch messages with IDs greater than lastID
 	if lastID > 0 {
-		query = query.Where("id < ?", lastID)
+		query = query.Where("id > ?", lastID)
 	}
 
-	err := query.Order("id DESC").Limit(pageSize).Find(&messages).Error
+	err := query.Order("id").Limit(pageSize).Find(&messages).Error
 	return messages, err
 }
