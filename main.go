@@ -16,12 +16,43 @@ func main() {
 	// Create a group for all /hope routes
 	hopeGroup := r.Group("/hope")
 	{
+
+		//测试路由
 		hopeGroup.GET("/ping", api.PingHandler)
 		hopeGroup.POST("/user", api.UserHandler)
 
-		// Chat endpoints
+		// 消息页路由
 		hopeGroup.POST("/send", api.SendMessageHandler)
 		hopeGroup.GET("/messages", api.GetMessagesHandler)
+
+		// 笔记页面相关接口
+		// 笔记页面相关接口
+		notesGroup := hopeGroup.Group("/notes")
+		{
+			// Create a new note
+			notesGroup.POST("", api.CreateNoteHandler)
+
+			// Get a specific note by ID
+			notesGroup.GET("/:id", api.GetNoteHandler)
+
+			// Update a note
+			notesGroup.PUT("/:id", api.UpdateNoteHandler)
+
+			// Delete a note
+			notesGroup.DELETE("/:id", api.DeleteNoteHandler)
+
+			// Get all notes for the current user
+			notesGroup.GET("", api.GetUserNotesHandler)
+
+			// Get a note for a specific date
+			notesGroup.GET("/date/:date", api.GetNoteByDateHandler)
+
+			// Get notes within a date range
+			notesGroup.GET("/range", api.GetNotesByDateRangeHandler)
+
+			// Get notes for a specific month
+			notesGroup.GET("/month/:year/:month", api.GetNotesByMonthHandler)
+		}
 
 		// Future endpoints can be added here within the group
 		// Diary endpoints will go here
