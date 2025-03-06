@@ -4,8 +4,8 @@ CREATE TABLE notes (
     user_id INT NOT NULL,
     note_date VARCHAR(20) NOT NULL, -- Using VARCHAR for date storage (e.g., "2023.1.18" format)
     content VARCHAR(1000) NOT NULL, -- Using VARCHAR instead of TEXT
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at bigint unsigned DEFAULT (unix_timestamp()),
+    updated_at bigint unsigned DEFAULT (unix_timestamp()),
     -- Ensure a user can only have one note per date
     UNIQUE KEY (user_id, note_date),
     -- Add index to improve query performance

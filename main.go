@@ -13,6 +13,8 @@ func main() {
 	// Create a new Gin router
 	r := gin.Default()
 
+	r.Use(api.AuthMiddleware())
+
 	// Create a group for all /hope routes
 	hopeGroup := r.Group("/hope")
 	{

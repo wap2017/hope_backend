@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"hope_backend/dao"
 	"hope_backend/models"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // CreateNoteRequest is the expected request body for creating a note
@@ -61,25 +63,31 @@ func CreateNoteHandler(c *gin.Context) {
 	// Check if a note already exists for this date
 	existingNote, err := dao.GetNoteByUserAndDate(userID.(int), req.NoteDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, Response{
-			Success: false,
-			Message: "Failed to check for existing note: " + err.Error(),
-		})
-		return
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusInternalServerError, Response{
+				Success: false,
+				Message: "Failed to check for existing note2: " + err.Error(),
+			})
+			return
+
+		}
 	}
 
 	if existingNote != nil {
-		c.JSON(http.StatusConflict, Response{
+		c.JSON(http.StatusOK, Response{
 			Success: false,
 			Message: "A note already exists for this date",
 		})
 		return
 	}
 
+	now := time.Now().Unix()
 	note := &models.Note{
-		UserID:   userID.(int),
-		NoteDate: req.NoteDate,
-		Content:  req.Content,
+		UserID:    userID.(int),
+		NoteDate:  req.NoteDate,
+		Content:   req.Content,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	if err := dao.CreateNote(note); err != nil {
