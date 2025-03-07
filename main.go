@@ -3,12 +3,16 @@ package main
 import (
 	"hope_backend/api"
 	"hope_backend/config"
+	"hope_backend/dao"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	config.InitDB() // Initialize DB connection
+	db := config.InitDB() // Initialize DB connection
+
+	// Initialize DAOs
+	userProfileDAO := dao.NewUserProfileDAO(db)
 
 	// Create a new Gin router
 	r := gin.Default()
@@ -27,7 +31,6 @@ func main() {
 		hopeGroup.POST("/send", api.SendMessageHandler)
 		hopeGroup.GET("/messages", api.GetMessagesHandler)
 
-		// 笔记页面相关接口
 		// 笔记页面相关接口
 		notesGroup := hopeGroup.Group("/notes")
 		{
@@ -59,6 +62,12 @@ func main() {
 		// Future endpoints can be added here within the group
 		// Diary endpoints will go here
 		// Settings endpoints will go here
+		// Settings page related APIs
+		settingsGroup := hopeGroup.Group("/user")
+		{
+			// Get user profile
+			settingsGroup.GET("/profile", api.GetUserProfileHandler(userProfileDAO))
+		}
 	}
 
 	// Start the server on port 8080

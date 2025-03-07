@@ -1,70 +1,66 @@
 package dao
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // UserProfile represents the user_profiles table structure
 type UserProfile struct {
-	ID                    int64  `json:"id"`
+	ID                    int64  `json:"id" gorm:"primaryKey"`
 	PatientName           string `json:"patient_name"`
 	RelationshipToPatient string `json:"relationship_to_patient"`
 	IllnessCause          string `json:"illness_cause"`
 	ChatBackground        string `json:"chat_background"`
 	UserAvatar            string `json:"user_avatar"`
 	UserNickname          string `json:"user_nickname"`
-	MobileNumber          string `json:"mobile_number"`
+	MobileNumber          string `json:"mobile_number" gorm:"uniqueIndex"`
 	Password              string `json:"-"` // Excluded from JSON serialization
 	CreatedAt             int64  `json:"created_at"`
 	UpdatedAt             int64  `json:"updated_at"`
 }
 
+// TableName specifies the table name for GORM
+func (UserProfile) TableName() string {
+	return "user_profiles"
+}
+
+// VerificationCode represents the verification_codes table structure
+type VerificationCode struct {
+	ID           int64  `gorm:"primaryKey"`
+	MobileNumber string `gorm:"index"`
+	Code         string
+	ExpiresAt    int64
+}
+
+// TableName specifies the table name for GORM
+func (VerificationCode) TableName() string {
+	return "verification_codes"
+}
+
 // UserProfileDAO handles database operations for user profiles
 type UserProfileDAO struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 // NewUserProfileDAO creates a new UserProfileDAO
-func NewUserProfileDAO(db *sql.DB) *UserProfileDAO {
+func NewUserProfileDAO(db *gorm.DB) *UserProfileDAO {
 	return &UserProfileDAO{db: db}
 }
 
 // GetByID retrieves a user profile by its ID
 func (dao *UserProfileDAO) GetByID(id int64) (*UserProfile, error) {
-	query := `
-		SELECT id, patient_name, relationship_to_patient, illness_cause,
-			   chat_background, user_avatar, user_nickname, mobile_number,
-			   password, created_at, updated_at
-		FROM user_profiles
-		WHERE id = ?
-	`
-
-	row := dao.db.QueryRow(query, id)
-
 	var profile UserProfile
-	err := row.Scan(
-		&profile.ID,
-		&profile.PatientName,
-		&profile.RelationshipToPatient,
-		&profile.IllnessCause,
-		&profile.ChatBackground,
-		&profile.UserAvatar,
-		&profile.UserNickname,
-		&profile.MobileNumber,
-		&profile.Password,
-		&profile.CreatedAt,
-		&profile.UpdatedAt,
-	)
+	result := dao.db.First(&profile, id)
 
-	if err != nil {
-		if err == sql.ErrNoRows {
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user profile not found")
 		}
-		return nil, err
+		return nil, result.Error
 	}
 
 	return &profile, nil
@@ -72,36 +68,14 @@ func (dao *UserProfileDAO) GetByID(id int64) (*UserProfile, error) {
 
 // GetByMobileNumber retrieves a user profile by mobile number
 func (dao *UserProfileDAO) GetByMobileNumber(mobileNumber string) (*UserProfile, error) {
-	query := `
-		SELECT id, patient_name, relationship_to_patient, illness_cause,
-			   chat_background, user_avatar, user_nickname, mobile_number,
-			   password, created_at, updated_at
-		FROM user_profiles
-		WHERE mobile_number = ?
-	`
-
-	row := dao.db.QueryRow(query, mobileNumber)
-
 	var profile UserProfile
-	err := row.Scan(
-		&profile.ID,
-		&profile.PatientName,
-		&profile.RelationshipToPatient,
-		&profile.IllnessCause,
-		&profile.ChatBackground,
-		&profile.UserAvatar,
-		&profile.UserNickname,
-		&profile.MobileNumber,
-		&profile.Password,
-		&profile.CreatedAt,
-		&profile.UpdatedAt,
-	)
+	result := dao.db.Where("mobile_number = ?", mobileNumber).First(&profile)
 
-	if err != nil {
-		if err == sql.ErrNoRows {
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user profile not found")
 		}
-		return nil, err
+		return nil, result.Error
 	}
 
 	return &profile, nil
@@ -115,75 +89,36 @@ func (dao *UserProfileDAO) Create(profile *UserProfile, plainPassword string) (i
 		return 0, err
 	}
 
-	query := `
-		INSERT INTO user_profiles (
-			patient_name, relationship_to_patient, illness_cause,
-			chat_background, user_avatar, user_nickname, mobile_number,
-			password, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
+	// Set timestamps
 	now := time.Now().UnixMilli()
 	profile.CreatedAt = now
 	profile.UpdatedAt = now
-
-	result, err := dao.db.Exec(
-		query,
-		profile.PatientName,
-		profile.RelationshipToPatient,
-		profile.IllnessCause,
-		profile.ChatBackground,
-		profile.UserAvatar,
-		profile.UserNickname,
-		profile.MobileNumber,
-		string(hashedPassword),
-		profile.CreatedAt,
-		profile.UpdatedAt,
-	)
-
-	if err != nil {
-		return 0, err
-	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	profile.ID = id
 	profile.Password = string(hashedPassword)
-	return id, nil
+
+	// Create the record
+	result := dao.db.Create(profile)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return profile.ID, nil
 }
 
 // Update updates an existing user profile
 func (dao *UserProfileDAO) Update(profile *UserProfile) error {
-	query := `
-		UPDATE user_profiles
-		SET patient_name = ?,
-			relationship_to_patient = ?,
-			illness_cause = ?,
-			chat_background = ?,
-			user_avatar = ?,
-			user_nickname = ?,
-			updated_at = ?
-		WHERE id = ?
-	`
-
 	profile.UpdatedAt = time.Now().UnixMilli()
 
-	_, err := dao.db.Exec(
-		query,
-		profile.PatientName,
-		profile.RelationshipToPatient,
-		profile.IllnessCause,
-		profile.ChatBackground,
-		profile.UserAvatar,
-		profile.UserNickname,
-		profile.UpdatedAt,
-		profile.ID,
-	)
+	result := dao.db.Model(profile).Updates(map[string]interface{}{
+		"patient_name":            profile.PatientName,
+		"relationship_to_patient": profile.RelationshipToPatient,
+		"illness_cause":           profile.IllnessCause,
+		"chat_background":         profile.ChatBackground,
+		"user_avatar":             profile.UserAvatar,
+		"user_nickname":           profile.UserNickname,
+		"updated_at":              profile.UpdatedAt,
+	})
 
-	return err
+	return result.Error
 }
 
 // UpdatePassword changes a user's password
@@ -207,16 +142,13 @@ func (dao *UserProfileDAO) UpdatePassword(userID int64, currentPassword, newPass
 	}
 
 	// Update the password
-	query := `
-		UPDATE user_profiles
-		SET password = ?,
-			updated_at = ?
-		WHERE id = ?
-	`
-
 	now := time.Now().UnixMilli()
-	_, err = dao.db.Exec(query, string(hashedPassword), now, userID)
-	return err
+	result := dao.db.Model(&UserProfile{ID: userID}).Updates(map[string]interface{}{
+		"password":   string(hashedPassword),
+		"updated_at": now,
+	})
+
+	return result.Error
 }
 
 // VerifyPassword checks if the provided password matches the stored hash
@@ -247,39 +179,34 @@ func (dao *UserProfileDAO) UpdateMobileNumber(userID int64, newMobileNumber stri
 	}
 
 	// If verification passed, update the mobile number
-	query := `
-		UPDATE user_profiles
-		SET mobile_number = ?,
-			updated_at = ?
-		WHERE id = ?
-	`
-
 	now := time.Now().UnixMilli()
+	result := dao.db.Model(&UserProfile{ID: userID}).Updates(map[string]interface{}{
+		"mobile_number": newMobileNumber,
+		"updated_at":    now,
+	})
 
-	_, err = dao.db.Exec(query, newMobileNumber, now, userID)
-	return err
+	return result.Error
 }
 
 // verifyMobileNumber checks if the mobile number belongs to the user via verification code
 func (dao *UserProfileDAO) verifyMobileNumber(mobileNumber string, verificationCode string) (bool, error) {
-	// Implementation remains the same as before
-	query := `
-		SELECT EXISTS(
-			SELECT 1 FROM verification_codes
-			WHERE mobile_number = ? AND code = ? AND expires_at > ?
-		)
-	`
+	var count int64
+	now := time.Now().UnixMilli()
 
-	var exists bool
-	err := dao.db.QueryRow(query, mobileNumber, verificationCode, time.Now().UnixMilli()).Scan(&exists)
-	if err != nil {
-		return false, err
+	// Check if there's a valid verification code
+	result := dao.db.Model(&VerificationCode{}).
+		Where("mobile_number = ? AND code = ? AND expires_at > ?", mobileNumber, verificationCode, now).
+		Count(&count)
+
+	if result.Error != nil {
+		return false, result.Error
 	}
 
-	if exists {
-		_, _ = dao.db.Exec("DELETE FROM verification_codes WHERE mobile_number = ? AND code = ?",
-			mobileNumber, verificationCode)
+	if count > 0 {
+		// Delete the used verification code
+		dao.db.Where("mobile_number = ? AND code = ?", mobileNumber, verificationCode).Delete(&VerificationCode{})
+		return true, nil
 	}
 
-	return exists, nil
+	return false, nil
 }
