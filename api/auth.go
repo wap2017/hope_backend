@@ -60,12 +60,13 @@ func AuthMiddleware() gin.HandlerFunc {
 			"/hope/auth/verification-code",
 			"/hope/auth/verify-mobile",
 			"/hope/user",
+			"/hope/uploads/",
 		}
 
 		// Skip authentication for public paths
 		requestPath := c.Request.URL.Path
 		for _, path := range publicPaths {
-			if requestPath == path {
+			if strings.HasPrefix(requestPath, path) {
 				c.Next()
 				return
 			}
