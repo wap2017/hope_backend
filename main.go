@@ -122,8 +122,8 @@ func main() {
 			postsGroup.POST("/:id/unlike", api.UnlikePostHandler(postDAO))
 
 			// Comment endpoints
-			postsGroup.POST("/:postId/comments", api.CreateCommentHandler(commentDAO))
-			postsGroup.GET("/:postId/comments", api.ListCommentsHandler(commentDAO))
+			postsGroup.POST("/:id/comments", api.CreateCommentHandler(commentDAO))
+			postsGroup.GET("/:id/comments", api.ListCommentsHandler(commentDAO))
 		}
 
 		// Comment-related endpoints

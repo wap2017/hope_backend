@@ -23,7 +23,7 @@ func CreateCommentHandler(commentDAO *dao.CommentDAO) gin.HandlerFunc {
 		}
 
 		// Get post ID from URL parameter
-		postID, err := strconv.ParseInt(c.Param("postId"), 10, 64)
+		postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, Response{
 				Success: false,
@@ -91,7 +91,7 @@ func ListCommentsHandler(commentDAO *dao.CommentDAO) gin.HandlerFunc {
 		}
 
 		// Get post ID from URL parameter
-		postID, err := strconv.ParseInt(c.Param("postId"), 10, 64)
+		postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, Response{
 				Success: false,
