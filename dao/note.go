@@ -21,7 +21,7 @@ func GetNoteByID(noteID int) (*models.Note, error) {
 }
 
 // GetNoteByUserAndDate retrieves a note by user ID and date
-func GetNoteByUserAndDate(userID int, noteDate string) (*models.Note, error) {
+func GetNoteByUserAndDate(userID int64, noteDate string) (*models.Note, error) {
 	var note models.Note
 	err := config.DB.Where("user_id = ? AND note_date = ?", userID, noteDate).First(&note).Error
 	if err != nil {
@@ -31,14 +31,14 @@ func GetNoteByUserAndDate(userID int, noteDate string) (*models.Note, error) {
 }
 
 // GetNotesByUserID retrieves all notes for a specific user
-func GetNotesByUserID(userID int) ([]models.Note, error) {
+func GetNotesByUserID(userID int64) ([]models.Note, error) {
 	var notes []models.Note
 	err := config.DB.Where("user_id = ?", userID).Order("note_date DESC").Find(&notes).Error
 	return notes, err
 }
 
 // GetNotesByDateRange retrieves notes for a user within a date range
-func GetNotesByDateRange(userID int, startDate, endDate string) ([]models.Note, error) {
+func GetNotesByDateRange(userID int64, startDate, endDate string) ([]models.Note, error) {
 	var notes []models.Note
 	err := config.DB.Where("user_id = ? AND note_date BETWEEN ? AND ?", userID, startDate, endDate).
 		Order("note_date ASC").Find(&notes).Error
@@ -52,12 +52,12 @@ func UpdateNote(note *models.Note) error {
 }
 
 // DeleteNote removes a note from the database
-func DeleteNote(noteID, userID int) error {
+func DeleteNote(noteID int, userID int64) error {
 	return config.DB.Where("note_id = ? AND user_id = ?", noteID, userID).Delete(&models.Note{}).Error
 }
 
 // GetNotesByMonth retrieves all notes for a user for a specific month
-func GetNotesByMonth(userID int, year, month string) ([]models.Note, error) {
+func GetNotesByMonth(userID int64, year, month string) ([]models.Note, error) {
 	var notes []models.Note
 
 	// Construct date pattern for the specified month (e.g., "2023.1.%")

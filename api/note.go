@@ -23,13 +23,6 @@ type UpdateNoteRequest struct {
 	Content string `json:"content" binding:"required"`
 }
 
-// Response is a generic JSON response structure
-type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
 // CreateNoteHandler handles creating a new note
 func CreateNoteHandler(c *gin.Context) {
 	// Get user ID from context or session
@@ -61,7 +54,7 @@ func CreateNoteHandler(c *gin.Context) {
 	}
 
 	// Check if a note already exists for this date
-	existingNote, err := dao.GetNoteByUserAndDate(userID.(int), req.NoteDate)
+	existingNote, err := dao.GetNoteByUserAndDate(userID.(int64), req.NoteDate)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusInternalServerError, Response{
@@ -83,7 +76,7 @@ func CreateNoteHandler(c *gin.Context) {
 
 	now := time.Now().Unix()
 	note := &models.Note{
-		UserID:    userID.(int),
+		UserID:    userID.(int64),
 		NoteDate:  req.NoteDate,
 		Content:   req.Content,
 		CreatedAt: now,
@@ -144,7 +137,7 @@ func GetNoteHandler(c *gin.Context) {
 	}
 
 	// Check if the note belongs to the user
-	if note.UserID != userID.(int) {
+	if note.UserID != userID.(int64) {
 		c.JSON(http.StatusForbidden, Response{
 			Success: false,
 			Message: "You don't have permission to access this note",
@@ -207,7 +200,7 @@ func UpdateNoteHandler(c *gin.Context) {
 		return
 	}
 
-	if note.UserID != userID.(int) {
+	if note.UserID != userID.(int64) {
 		c.JSON(http.StatusForbidden, Response{
 			Success: false,
 			Message: "You don't have permission to update this note",
@@ -252,7 +245,7 @@ func DeleteNoteHandler(c *gin.Context) {
 		return
 	}
 
-	if err := dao.DeleteNote(noteID, userID.(int)); err != nil {
+	if err := dao.DeleteNote(noteID, userID.(int64)); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
 			Message: "Failed to delete note: " + err.Error(),
@@ -278,7 +271,7 @@ func GetUserNotesHandler(c *gin.Context) {
 		return
 	}
 
-	notes, err := dao.GetNotesByUserID(userID.(int))
+	notes, err := dao.GetNotesByUserID(userID.(int64))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -315,7 +308,7 @@ func GetNoteByDateHandler(c *gin.Context) {
 		return
 	}
 
-	note, err := dao.GetNoteByUserAndDate(userID.(int), date)
+	note, err := dao.GetNoteByUserAndDate(userID.(int64), date)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -362,7 +355,7 @@ func GetNotesByDateRangeHandler(c *gin.Context) {
 		return
 	}
 
-	notes, err := dao.GetNotesByDateRange(userID.(int), startDate, endDate)
+	notes, err := dao.GetNotesByDateRange(userID.(int64), startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,
@@ -401,7 +394,7 @@ func GetNotesByMonthHandler(c *gin.Context) {
 		return
 	}
 
-	notes, err := dao.GetNotesByMonth(userID.(int), year, month)
+	notes, err := dao.GetNotesByMonth(userID.(int64), year, month)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Success: false,

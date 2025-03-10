@@ -1,0 +1,420 @@
+openapi: 3.0.0
+info:
+  title: Depression Companion API
+  description: API for the Depression Companion application
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /hope/auth/register:
+    post:
+      summary: Register a new user
+      description: Creates a new user account with verification
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserRequest'
+            example:
+              mobile_number: "1234567890"
+              password: "securepassword123"
+              verification_code: "123456"
+              patient_name: "John Doe"
+              relationship_to_patient: "Self"
+              illness_cause: "Depression"
+              user_nickname: "JohnD"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              example:
+                success: true
+                message: "User registered successfully"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  profile:
+                    id: 1
+                    patient_name: "John Doe"
+                    relationship_to_patient: "Self"
+                    illness_cause: "Depression"
+                    chat_background: ""
+                    user_avatar: ""
+                    user_nickname: "JohnD"
+                    mobile_number: "1234567890"
+                    created_at: 1678912345000
+                    updated_at: 1678912345000
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Invalid request: verification code is invalid"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Failed to create user"
+  
+  /hope/auth/login:
+    post:
+      summary: User login
+      description: Authenticates a user and returns a JWT token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              mobile_number: "1234567890"
+              password: "securepassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                success: true
+                message: "Login successful"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  profile:
+                    id: 1
+                    patient_name: "John Doe"
+                    relationship_to_patient: "Self"
+                    illness_cause: "Depression"
+                    chat_background: ""
+                    user_avatar: ""
+                    user_nickname: "JohnD"
+                    mobile_number: "1234567890"
+                    created_at: 1678912345000
+                    updated_at: 1678912345000
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Invalid request: mobile_number is required"
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Invalid credentials"
+
+  /hope/auth/verification-code:
+    post:
+      summary: Request verification code
+      description: Sends a verification code to the provided mobile number
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationCodeRequest'
+            example:
+              mobile_number: "1234567890"
+      responses:
+        '200':
+          description: Verification code sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Verification code sent successfully"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Invalid request: mobile_number is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Failed to send verification code"
+  
+  /hope/auth/verify-mobile:
+    post:
+      summary: Verify mobile number
+      description: Verifies a mobile number with the provided verification code
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyMobileRequest'
+            example:
+              mobile_number: "1234567890"
+              verification_code: "123456"
+      responses:
+        '200':
+          description: Mobile number verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: "Mobile number verified successfully"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Invalid verification code"
+
+  /hope/user/profile:
+    get:
+      summary: Get user profile
+      description: Returns the authenticated user's profile
+      tags:
+        - User
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                success: true
+                data:
+                  id: 1
+                  patient_name: "John Doe"
+                  relationship_to_patient: "Self"
+                  illness_cause: "Depression"
+                  chat_background: ""
+                  user_avatar: ""
+                  user_nickname: "JohnD"
+                  mobile_number: "1234567890"
+                  created_at: 1678912345000
+                  updated_at: 1678912345000
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Authorization header is required"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterUserRequest:
+      type: object
+      required:
+        - mobile_number
+        - password
+        - verification_code
+        - patient_name
+        - relationship_to_patient
+        - user_nickname
+      properties:
+        mobile_number:
+          type: string
+          description: User's mobile phone number
+        password:
+          type: string
+          description: User's password (min 8 characters)
+          minLength: 8
+        verification_code:
+          type: string
+          description: Verification code sent to mobile number
+        patient_name:
+          type: string
+          description: Name of the patient
+        relationship_to_patient:
+          type: string
+          description: User's relationship to the patient
+        illness_cause:
+          type: string
+          description: Cause of the illness
+        user_nickname:
+          type: string
+          description: User's nickname
+
+    LoginRequest:
+      type: object
+      required:
+        - mobile_number
+        - password
+      properties:
+        mobile_number:
+          type: string
+          description: User's mobile phone number
+        password:
+          type: string
+          description: User's password
+
+    VerificationCodeRequest:
+      type: object
+      required:
+        - mobile_number
+      properties:
+        mobile_number:
+          type: string
+          description: User's mobile phone number
+
+    VerifyMobileRequest:
+      type: object
+      required:
+        - mobile_number
+        - verification_code
+      properties:
+        mobile_number:
+          type: string
+          description: User's mobile phone number
+        verification_code:
+          type: string
+          description: Verification code sent to mobile number
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: User ID
+        patient_name:
+          type: string
+          description: Name of the patient
+        relationship_to_patient:
+          type: string
+          description: User's relationship to the patient
+        illness_cause:
+          type: string
+          description: Cause of the illness
+        chat_background:
+          type: string
+          description: URL to chat background image
+        user_avatar:
+          type: string
+          description: URL to user avatar image
+        user_nickname:
+          type: string
+          description: User's nickname
+        mobile_number:
+          type: string
+          description: User's mobile phone number
+        created_at:
+          type: integer
+          format: int64
+          description: Creation timestamp (Unix milliseconds)
+        updated_at:
+          type: integer
+          format: int64
+          description: Last update timestamp (Unix milliseconds)
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        message:
+          type: string
+          description: Success message
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: JWT authentication token
+            profile:
+              $ref: '#/components/schemas/UserProfile'
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        message:
+          type: string
+          description: Success message
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: JWT authentication token
+            profile:
+              $ref: '#/components/schemas/UserProfile'
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        data:
+          $ref: '#/components/schemas/UserProfile'
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        message:
+          type: string
+          description: Success message
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Always false for errors
+        message:
+          type: string
+          description: Error message

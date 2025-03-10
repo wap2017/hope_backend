@@ -67,7 +67,33 @@ func main() {
 		{
 			// Get user profile
 			settingsGroup.GET("/profile", api.GetUserProfileHandler(userProfileDAO))
+
+			// Update user profile
+			settingsGroup.PUT("/profile", api.UpdateUserProfileHandler(userProfileDAO))
+
+			// Update user password
+			settingsGroup.PUT("/password", api.UpdatePasswordHandler(userProfileDAO))
+
+			// Update mobile number with verification
+			settingsGroup.PUT("/mobile", api.UpdateMobileNumberHandler(userProfileDAO))
 		}
+
+		// Authentication routes (outside the settingsGroup)
+		authGroup := hopeGroup.Group("/auth")
+		{
+			// User registration
+			authGroup.POST("/register", api.RegisterUserHandler(userProfileDAO))
+
+			// User login
+			authGroup.POST("/login", api.LoginHandler(userProfileDAO))
+
+			// Request verification code for mobile number
+			authGroup.POST("/verification-code", api.RequestVerificationCodeHandler())
+
+			// Verify mobile number
+			authGroup.POST("/verify-mobile", api.VerifyMobileNumberHandler(userProfileDAO))
+		}
+
 	}
 
 	// Start the server on port 8080

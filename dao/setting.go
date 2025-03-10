@@ -2,6 +2,7 @@ package dao
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -88,6 +89,7 @@ func (dao *UserProfileDAO) Create(profile *UserProfile, plainPassword string) (i
 	if err != nil {
 		return 0, err
 	}
+	fmt.Printf("plainPassword:%v, hashPassword:%v\n", plainPassword, string(hashedPassword))
 
 	// Set timestamps
 	now := time.Now().UnixMilli()
@@ -154,6 +156,7 @@ func (dao *UserProfileDAO) UpdatePassword(userID int64, currentPassword, newPass
 // VerifyPassword checks if the provided password matches the stored hash
 func (dao *UserProfileDAO) VerifyPassword(mobileNumber, password string) (bool, int64, error) {
 	profile, err := dao.GetByMobileNumber(mobileNumber)
+	fmt.Printf("VerifyPassword profile=%+v, err:%+v\n", profile, err)
 	if err != nil {
 		return false, 0, err
 	}
