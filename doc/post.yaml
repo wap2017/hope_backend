@@ -1,0 +1,741 @@
+openapi: 3.0.3
+info:
+  title: Post and Comment API
+  description: API for managing posts, comments, and likes in the social media feature
+  version: 1.0.0
+servers:
+  - url: http://hope.ioaths.com/hope
+    description: Development server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the post
+        user_id:
+          type: integer
+          format: int64
+          description: ID of the user who created the post
+        content:
+          type: string
+          description: Text content of the post
+        view_count:
+          type: integer
+          description: Number of times the post has been viewed
+        like_count:
+          type: integer
+          description: Number of likes the post has received
+        comment_count:
+          type: integer
+          description: Number of comments on the post
+        created_at:
+          type: integer
+          format: int64
+          description: Creation timestamp in milliseconds since epoch
+        updated_at:
+          type: integer
+          format: int64
+          description: Last update timestamp in milliseconds since epoch
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostImage'
+          description: Images attached to the post
+        liked:
+          type: boolean
+          description: Whether the current user has liked this post
+        user_info:
+          $ref: '#/components/schemas/UserProfile'
+          description: Information about the user who created the post
+    
+    PostImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the image
+        post_id:
+          type: integer
+          format: int64
+          description: ID of the post this image belongs to
+        image_path:
+          type: string
+          description: Path to the stored image file
+        display_order:
+          type: integer
+          description: Order for displaying multiple images
+        created_at:
+          type: integer
+          format: int64
+          description: Creation timestamp in milliseconds since epoch
+    
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the comment
+        post_id:
+          type: integer
+          format: int64
+          description: ID of the post this comment belongs to
+        user_id:
+          type: integer
+          format: int64
+          description: ID of the user who created the comment
+        parent_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID of the parent comment (if this is a reply)
+        content:
+          type: string
+          description: Text content of the comment
+        like_count:
+          type: integer
+          description: Number of likes the comment has received
+        reply_count:
+          type: integer
+          description: Number of replies to this comment
+        level:
+          type: integer
+          description: Nesting level (0 for top-level comments)
+        created_at:
+          type: integer
+          format: int64
+          description: Creation timestamp in milliseconds since epoch
+        updated_at:
+          type: integer
+          format: int64
+          description: Last update timestamp in milliseconds since epoch
+        liked:
+          type: boolean
+          description: Whether the current user has liked this comment
+        user_info:
+          $ref: '#/components/schemas/UserProfile'
+          description: Information about the user who created the comment
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+          description: Replies to this comment (if any)
+    
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        patient_name:
+          type: string
+        relationship_to_patient:
+          type: string
+        illness_cause:
+          type: string
+        chat_background:
+          type: string
+        user_avatar:
+          type: string
+        user_nickname:
+          type: string
+        mobile_number:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    
+    PostRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Text content of the post
+    
+    CommentRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Text content of the comment
+        parent_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID of the parent comment (if this is a reply)
+    
+    Response:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        message:
+          type: string
+          description: A message describing the result of the operation
+        data:
+          type: object
+          description: The data returned by the operation
+        total:
+          type: integer
+          format: int64
+          description: Total number of items (for paginated responses)
+        page:
+          type: integer
+          description: Current page number (for paginated responses)
+        size:
+          type: integer
+          description: Page size (for paginated responses)
+
+paths:
+  /posts:
+    post:
+      summary: Create a new post
+      description: Creates a new post with optional images
+      operationId: createPost
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  description: Text content of the post
+                images:
+                  type: array
+                  description: Up to 9 images to attach to the post
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Post'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+    get:
+      summary: List posts
+      description: Retrieves a list of posts with pagination and filtering options
+      operationId: listPosts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of posts per page
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Filter posts by user ID
+      responses:
+        '200':
+          description: Posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Post'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /posts/{id}:
+    get:
+      summary: Get post details
+      description: Retrieves details of a specific post by ID
+      operationId: getPost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+      responses:
+        '200':
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Post'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+    
+    put:
+      summary: Update post
+      description: Updates the content of an existing post
+      operationId: updatePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Post'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '403':
+          description: Forbidden - user is not the owner of the post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+    
+    delete:
+      summary: Delete post
+      description: Deletes a post and all its related data (images, comments, likes)
+      operationId: deletePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '403':
+          description: Forbidden - user is not the owner of the post
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /posts/{id}/like:
+    post:
+      summary: Like a post
+      description: Adds a like to a post
+      operationId: likePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+      responses:
+        '200':
+          description: Post liked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Post already liked by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /posts/{id}/unlike:
+    post:
+      summary: Unlike a post
+      description: Removes a like from a post
+      operationId: unlikePost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+      responses:
+        '200':
+          description: Post unliked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Post not liked by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /posts/{postId}/comments:
+    post:
+      summary: Create a comment
+      description: Creates a new comment or reply on a post
+      operationId: createComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid request or maximum nesting level reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Post or parent comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+    
+    get:
+      summary: List comments
+      description: Retrieves comments for a post with pagination
+      operationId: listComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Post ID
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of comments per page
+      responses:
+        '200':
+          description: Comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Comment'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /comments/{id}:
+    delete:
+      summary: Delete comment
+      description: Deletes a comment and all its replies
+      operationId: deleteComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Comment ID
+      responses:
+        '200':
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '403':
+          description: Forbidden - user is not the owner of the comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /comments/{id}/like:
+    post:
+      summary: Like a comment
+      description: Adds a like to a comment
+      operationId: likeComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Comment ID
+      responses:
+        '200':
+          description: Comment liked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Comment already liked by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+  
+  /comments/{id}/unlike:
+    post:
+      summary: Unlike a comment
+      description: Removes a like from a comment
+      operationId: unlikeComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Comment ID
+      responses:
+        '200':
+          description: Comment unliked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Comment not liked by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
