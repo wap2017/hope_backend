@@ -13,6 +13,8 @@ func main() {
 
 	// Initialize DAOs
 	userProfileDAO := dao.NewUserProfileDAO(db)
+	postDAO := dao.NewPostDAO(db)
+	commentDAO := dao.NewCommentDAO(db)
 
 	// Create a new Gin router
 	r := gin.Default()
@@ -92,6 +94,49 @@ func main() {
 
 			// Verify mobile number
 			authGroup.POST("/verify-mobile", api.VerifyMobileNumberHandler(userProfileDAO))
+		}
+
+		// Inside the hopeGroup
+		// Post-related endpoints
+		postsGroup := hopeGroup.Group("/posts")
+		{
+			// Create a new post
+			postsGroup.POST("", api.CreatePostHandler(postDAO))
+
+			// Get a post by ID
+			postsGroup.GET("/:id", api.GetPostHandler(postDAO))
+
+			// Update a post
+			postsGroup.PUT("/:id", api.UpdatePostHandler(postDAO))
+
+			// Delete a post
+			postsGroup.DELETE("/:id", api.DeletePostHandler(postDAO))
+
+			// List posts with pagination
+			postsGroup.GET("", api.ListPostsHandler(postDAO))
+
+			// Like a post
+			postsGroup.POST("/:id/like", api.LikePostHandler(postDAO))
+
+			// Unlike a post
+			postsGroup.POST("/:id/unlike", api.UnlikePostHandler(postDAO))
+
+			// Comment endpoints
+			postsGroup.POST("/:postId/comments", api.CreateCommentHandler(commentDAO))
+			postsGroup.GET("/:postId/comments", api.ListCommentsHandler(commentDAO))
+		}
+
+		// Comment-related endpoints
+		commentsGroup := hopeGroup.Group("/comments")
+		{
+			// Delete a comment
+			commentsGroup.DELETE("/:id", api.DeleteCommentHandler(commentDAO))
+
+			// Like a comment
+			commentsGroup.POST("/:id/like", api.LikeCommentHandler(commentDAO))
+
+			// Unlike a comment
+			commentsGroup.POST("/:id/unlike", api.UnlikeCommentHandler(commentDAO))
 		}
 
 	}
