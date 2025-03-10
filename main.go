@@ -139,11 +139,13 @@ func main() {
 			commentsGroup.POST("/:id/unlike", api.UnlikeCommentHandler(commentDAO))
 		}
 
+		hopeGroup.Static("/file/posts", "./uploads/posts")
+
 	}
 
 	// Set up static file serving for uploaded files
-	r.Static("/post", "./uploads/post") // assuming your images are stored in ./uploads/post directory
-	r.Static("/uploads", "./uploads")
+	// r.Static("/hope/file/post", "./uploads/posts") // assuming your images are stored in ./uploads/post directory
+	// r.Static("/uploads", "./uploads")
 
 	// Start the server on port 8080
 	r.Run(":8080")

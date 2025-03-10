@@ -60,7 +60,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			"/hope/auth/verification-code",
 			"/hope/auth/verify-mobile",
 			"/hope/user",
-			"/hope/uploads/",
+			"/hope/file/posts",
 		}
 
 		// Skip authentication for public paths
