@@ -59,7 +59,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			"/hope/auth/login",
 			"/hope/auth/verification-code",
 			"/hope/auth/verify-mobile",
-			"/hope/user",
+			// "/hope/user",
 			"/hope/file/posts",
 		}
 

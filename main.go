@@ -80,6 +80,8 @@ func main() {
 
 			// Update mobile number with verification
 			settingsGroup.PUT("/mobile", api.UpdateMobileNumberHandler(userProfileDAO))
+
+			settingsGroup.POST("/upload", api.FileUploadHandler(userProfileDAO))
 		}
 
 		// Authentication routes (outside the settingsGroup)

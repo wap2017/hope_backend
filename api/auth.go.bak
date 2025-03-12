@@ -65,6 +65,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Get the Authorization header
 		authHeader := c.GetHeader("Authorization")
+		fmt.Printf("authHeader:%v\n", authHeader)
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, Response{
 				Success: false,

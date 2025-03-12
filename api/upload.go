@@ -34,6 +34,7 @@ func FileUploadHandler(profileDAO *dao.UserProfileDAO) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get authenticated user ID
 		userID, exists := c.Get("userID")
+		fmt.Printf("userID:%v exists%v\n", userID, exists)
 		if !exists {
 			c.JSON(http.StatusUnauthorized, Response{
 				Success: false,
