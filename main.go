@@ -19,6 +19,8 @@ func main() {
 	// Create a new Gin router
 	r := gin.Default()
 
+	api.SetupStaticFileServer(r)
+
 	r.Use(api.AuthMiddleware())
 
 	// Create a group for all /hope routes
