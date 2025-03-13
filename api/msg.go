@@ -6,7 +6,6 @@ import (
 	"github.com/sashabaranov/go-openai"
 
 	"fmt"
-	"hope_backend/config"
 	"hope_backend/dao"
 	"hope_backend/models"
 	"net/http"
@@ -32,72 +31,68 @@ const (
 	MsgStatus_Send = iota
 )
 
-var userProfileDAO *dao.UserProfileDAO
-
-func init() {
-	userProfileDAO = dao.NewUserProfileDAO(config.DB)
-}
-
 // SendMessageHandler handles sending a message
-func SendMessageHandler(c *gin.Context) {
-	var msg SendMsg
-	if err := c.ShouldBindJSON(&msg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+func SendMessageHandler(profileDAO *dao.UserProfileDAO) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var msg SendMsg
+		if err := c.ShouldBindJSON(&msg); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		now := time.Now().UnixMicro()
+
+		if err := dao.CreateMessage(&models.Message{
+			SenderID:    msg.UserID,
+			ReceiverID:  1, //system的用户id固定是1
+			ChatID:      msg.ChatID,
+			Content:     msg.Content,
+			MsgType:     MsgType_Text,
+			Status:      MsgStatus_Send,
+			CreatedTime: now,
+			UpdatedTime: now,
+		}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
+			return
+		}
+
+		// 查询用户信息
+		// TODO
+
+		user, err := profileDAO.GetByID(msg.UserID)
+		if err != nil {
+			fmt.Printf("err:%v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
+			return
+		}
+
+		// 进行chatgpt回复
+		// aiRsp, err := getChatGPTResponse(msg.Content)
+		aiRsp, err := getChatGPTResponseEnhance(msg.Content,
+			user.PatientName, user.RelationshipToPatient, user.IllnessCause)
+		if err != nil {
+			fmt.Printf("err=%v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "ai resp error"})
+			return
+		}
+
+		// 将AI回复插入数据库中
+		if err = dao.CreateMessage(&models.Message{
+			SenderID:    1, //system的用户id固定是1
+			ReceiverID:  msg.UserID,
+			ChatID:      msg.ChatID,
+			Content:     aiRsp,
+			MsgType:     MsgType_Text,
+			Status:      MsgStatus_Send,
+			CreatedTime: now,
+			UpdatedTime: now,
+		}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Message sent successfully"})
 	}
-
-	now := time.Now().UnixMicro()
-
-	if err := dao.CreateMessage(&models.Message{
-		SenderID:    msg.UserID,
-		ReceiverID:  1, //system的用户id固定是1
-		ChatID:      msg.ChatID,
-		Content:     msg.Content,
-		MsgType:     MsgType_Text,
-		Status:      MsgStatus_Send,
-		CreatedTime: now,
-		UpdatedTime: now,
-	}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
-		return
-	}
-
-	// 查询用户信息
-	// TODO
-
-	user, err := userProfileDAO.GetByID(msg.UserID)
-	if err != nil {
-		fmt.Printf("err:%v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
-		return
-	}
-
-	// 进行chatgpt回复
-	// aiRsp, err := getChatGPTResponse(msg.Content)
-	aiRsp, err := getChatGPTResponseEnhance(msg.Content,
-		user.PatientName, user.RelationshipToPatient, user.IllnessCause)
-	if err != nil {
-		fmt.Printf("err=%v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "ai resp error"})
-		return
-	}
-
-	// 将AI回复插入数据库中
-	if err = dao.CreateMessage(&models.Message{
-		SenderID:    1, //system的用户id固定是1
-		ReceiverID:  msg.UserID,
-		ChatID:      msg.ChatID,
-		Content:     aiRsp,
-		MsgType:     MsgType_Text,
-		Status:      MsgStatus_Send,
-		CreatedTime: now,
-		UpdatedTime: now,
-	}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Message sent successfully"})
 }
 
 // TODO 这里要加提示词

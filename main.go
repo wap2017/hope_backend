@@ -32,7 +32,7 @@ func main() {
 		hopeGroup.POST("/user", api.UserHandler)
 
 		// 消息页路由
-		hopeGroup.POST("/send", api.SendMessageHandler)
+		hopeGroup.POST("/send", api.SendMessageHandler(userProfileDAO))
 		hopeGroup.GET("/messages", api.GetMessagesHandler)
 
 		// 笔记页面相关接口
