@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Configuration
-REMOTE_HOST="170.205.39.36"
-REMOTE_USER="root"
-REMOTE_PATH="/root/app/hope_backend"
+REMOTE_HOST="52.76.139.155"
+REMOTE_USER="ubuntu"
+REMOTE_PATH="/home/ubuntu/app/hope_backend"
 BINARY_NAME="hope_backend"
 LOCAL_BINARY="./${BINARY_NAME}"
 
