@@ -18,7 +18,7 @@ import (
 const (
 	MaxUploadSize     = 10 << 20 // 10 MB
 	UploadsBasePath   = "./uploads"
-	PublicFileBaseURL = "http://hope.ioaths.com/hope/static"
+	PublicFileBaseURL = "http://hope.layu.cc/hope/static"
 )
 
 // FileType represents supported upload file types
