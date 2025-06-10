@@ -21,6 +21,7 @@ func main() {
 
 	api.SetupStaticFileServer(r)
 
+	r.Use(api.CurlLoggingMiddleware())
 	r.Use(api.AuthMiddleware())
 
 	// Create a group for all /hope routes
