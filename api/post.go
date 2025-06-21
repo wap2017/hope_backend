@@ -51,7 +51,7 @@ func CreatePostHandler(postDAO *dao.PostDAO) gin.HandlerFunc {
 		}
 
 		// Parse form data
-		if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max
+		if err := c.Request.ParseMultipartForm(100 << 20); err != nil { // 32MB max
 			c.JSON(http.StatusBadRequest, Response{
 				Success: false,
 				Message: "Failed to parse form data: " + err.Error(),
