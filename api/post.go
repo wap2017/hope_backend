@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"hope_backend/dao"
 
@@ -25,9 +26,12 @@ type CommentRequest struct {
 }
 
 const (
-	defaultPageSize = 10
-	maxPageSize     = 50
-	uploadDir       = "uploads/posts"
+	defaultPageSize   = 10
+	maxPageSize       = 50
+	uploadDir         = "uploads/posts"
+	maxImageDimension = 1920 // Max width/height for full images
+	thumbnailWidth    = 800  // Width for thumbnails
+	thumbnailPrefix   = "thumb_"
 )
 
 // Initialize the upload directory
@@ -51,7 +55,7 @@ func CreatePostHandler(postDAO *dao.PostDAO) gin.HandlerFunc {
 		}
 
 		// Parse form data
-		if err := c.Request.ParseMultipartForm(100 << 20); err != nil { // 32MB max
+		if err := c.Request.ParseMultipartForm(100 << 20); err != nil { // 100MB max
 			c.JSON(http.StatusBadRequest, Response{
 				Success: false,
 				Message: "Failed to parse form data: " + err.Error(),
@@ -86,20 +90,43 @@ func CreatePostHandler(postDAO *dao.PostDAO) gin.HandlerFunc {
 
 		// Process and save each image
 		for _, file := range files {
+			// Validate file extension
+			ext := strings.ToLower(filepath.Ext(file.Filename))
+			if !isValidImageExt(ext) {
+				c.JSON(http.StatusBadRequest, Response{
+					Success: false,
+					Message: "Invalid file type. Allowed types: .jpg, .jpeg, .png, .gif",
+				})
+				return
+			}
+
 			// Generate unique filename
-			ext := filepath.Ext(file.Filename)
 			uniqueID := uuid.New().String()
 			newFilename := uniqueID + ext
 			filePath := filepath.Join(uploadDir, newFilename)
 			relativePath := filepath.Join("posts", newFilename) // Store relative path in DB
 
-			// Save the file
+			// Save the uploaded file
 			if err := c.SaveUploadedFile(file, filePath); err != nil {
 				c.JSON(http.StatusInternalServerError, Response{
 					Success: false,
 					Message: "Failed to save image: " + err.Error(),
 				})
 				return
+			}
+
+			// Optimize the image (resize and compress)
+			if err := optimizeImage(filePath, filePath, maxImageDimension); err != nil {
+				fmt.Printf("Warning: Image optimization failed for %s: %v\n", newFilename, err)
+				// Continue even if optimization fails
+			}
+
+			// Generate thumbnail
+			thumbnailFilename := thumbnailPrefix + newFilename
+			thumbnailPath := filepath.Join(uploadDir, thumbnailFilename)
+			if err := createThumbnail(filePath, thumbnailPath, thumbnailWidth); err != nil {
+				fmt.Printf("Warning: Thumbnail creation failed for %s: %v\n", newFilename, err)
+				// Continue even if thumbnail creation fails
 			}
 
 			imagePaths = append(imagePaths, relativePath)
@@ -353,12 +380,22 @@ func DeletePostHandler(postDAO *dao.PostDAO) gin.HandlerFunc {
 			return
 		}
 
-		// Delete images from filesystem
+		// Delete images and thumbnails from filesystem
 		for _, image := range post.Images {
 			// Convert DB path to filesystem path
 			filePath := filepath.Join("uploads", image.ImagePath)
-			// Attempt to delete file, but don't fail if unsuccessful
-			_ = os.Remove(filePath)
+
+			// Delete main image
+			if err := os.Remove(filePath); err != nil {
+				fmt.Printf("Warning: Could not remove image %s: %v\n", filePath, err)
+			}
+
+			// Delete thumbnail
+			filename := filepath.Base(filePath)
+			thumbnailPath := filepath.Join(filepath.Dir(filePath), thumbnailPrefix+filename)
+			if err := os.Remove(thumbnailPath); err != nil {
+				fmt.Printf("Info: Could not remove thumbnail %s: %v\n", thumbnailPath, err)
+			}
 		}
 
 		// Delete the post and all related data
